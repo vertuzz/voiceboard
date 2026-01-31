@@ -53,6 +53,7 @@ import dev.patrickgold.florisboard.ime.text.key.UtilityKeyAction
 import dev.patrickgold.florisboard.ime.text.keyboard.TextKeyData
 import dev.patrickgold.florisboard.ime.theme.ThemeMode
 import dev.patrickgold.florisboard.ime.theme.extCoreTheme
+import dev.patrickgold.florisboard.ime.voice.PromptMode
 import dev.patrickgold.florisboard.ime.window.ImeWindowConfig
 import dev.patrickgold.florisboard.lib.ext.ExtensionComponentName
 import dev.patrickgold.florisboard.lib.util.VersionName
@@ -745,6 +746,26 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val editorLevel = enum(
             key = "theme__editor_level",
             default = SnyggLevel.ADVANCED,
+        )
+    }
+
+    val voice = Voice()
+    inner class Voice {
+        val apiKey = string(
+            key = "voice__api_key",
+            default = "",
+        )
+        val enabled = boolean(
+            key = "voice__enabled",
+            default = true,
+        )
+        val defaultPromptMode = enum<PromptMode>(
+            key = "voice__default_prompt_mode",
+            default = PromptMode.CLEAN,
+        )
+        val customPrompt = string(
+            key = "voice__custom_prompt",
+            default = "",
         )
     }
 

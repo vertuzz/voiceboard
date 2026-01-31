@@ -66,6 +66,7 @@ import dev.patrickgold.florisboard.ime.media.MediaInputLayout
 import dev.patrickgold.florisboard.ime.sheet.BottomSheetWindow
 import dev.patrickgold.florisboard.ime.text.TextInputLayout
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
+import dev.patrickgold.florisboard.ime.voice.VoiceRecordingOverlay
 import dev.patrickgold.florisboard.keyboardManager
 import kotlinx.coroutines.delay
 import org.florisboard.lib.compose.ProvideActualLayoutDirection
@@ -123,6 +124,7 @@ fun ImeRootWindow() {
         DevtoolsOverlay()
         ImeWindow()
         BottomSheetWindow()
+        VoiceRecordingOverlay()
         ImeSystemUi()
     }
 }

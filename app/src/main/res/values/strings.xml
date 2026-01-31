@@ -1159,4 +1159,46 @@
         <item quantity="other">{v} candidates</item>
     </plurals>
 
+    <!-- Voice Input Strings -->
+    <string name="settings__voice__title">Voice Input</string>
+
+    <string name="pref__voice__group_api__label">API Configuration</string>
+    <string name="pref__voice__api_key__label">OpenRouter API Key</string>
+    <string name="pref__voice__api_key__not_set">Not configured</string>
+    <string name="pref__voice__api_key__hint">Enter your API key</string>
+    <string name="pref__voice__api_key__save">Save API Key</string>
+    <string name="pref__voice__api_key__set">Set API Key</string>
+    <string name="pref__voice__api_key__change">Change API Key</string>
+    <string name="pref__voice__api_key__summary">Your OpenRouter API key for voice transcription. Get one at openrouter.ai</string>
+
+    <string name="pref__voice__group_transcription__label">Transcription</string>
+    <string name="pref__voice__default_prompt_mode__label">Transcription Mode</string>
+    <string name="pref__voice__custom_prompt__label">Custom Prompt</string>
+    <string name="pref__voice__custom_prompt__hint">Enter your custom transcription instructions</string>
+    <string name="pref__voice__custom_prompt__summary">Custom instructions for the AI transcription model</string>
+
+    <string name="pref__voice__group_permissions__label">Permissions</string>
+    <string name="pref__voice__microphone_permission__label">Microphone Permission</string>
+    <string name="pref__voice__microphone_permission__granted">Granted</string>
+    <string name="pref__voice__microphone_permission__not_granted">Not granted</string>
+    <string name="pref__voice__microphone_permission__request">Grant Permission</string>
+
+    <string name="pref__voice__group_info__label">Information</string>
+    <string name="pref__voice__about__label">About Voice Input</string>
+    <string name="pref__voice__about__summary">Voice input uses OpenRouter API with Gemini Flash 3 Preview for transcription. Maximum recording duration is 10 minutes.</string>
+
+    <string name="enum__prompt_mode__raw">Raw (verbatim)</string>
+    <string name="enum__prompt_mode__clean">Clean (grammar fixed)</string>
+    <string name="enum__prompt_mode__translate">Translate to English</string>
+    <string name="enum__prompt_mode__custom">Custom prompt</string>
+
+    <string name="voice__recording__title">Recording</string>
+    <string name="voice__recording__time_remaining">Time remaining: {time}</string>
+    <string name="voice__recording__swipe_to_cancel">Swipe left to cancel</string>
+    <string name="voice__recording__release_to_send">Release to transcribe</string>
+    <string name="voice__recording__stop_button">Stop &amp; Transcribe</string>
+    <string name="voice__processing__title">Transcribing…</string>
+    <string name="voice__error__title">Error</string>
+    <string name="voice__prompt_selector__title">Select Mode</string>
+
 </resources>

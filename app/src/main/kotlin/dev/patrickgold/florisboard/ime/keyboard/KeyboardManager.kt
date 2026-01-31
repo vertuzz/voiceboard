@@ -62,6 +62,7 @@ import dev.patrickgold.florisboard.lib.uppercase
 import dev.patrickgold.florisboard.lib.util.InputMethodUtils
 import dev.patrickgold.florisboard.nlpManager
 import dev.patrickgold.florisboard.subtypeManager
+import dev.patrickgold.florisboard.voiceInputManager
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
@@ -687,6 +688,7 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                 editorInstance.massSelection.begin()
             }
             KeyCode.SHIFT -> handleShiftDown(data)
+            // Voice input is handled in onInputKeyUp as a toggle
         }
     }
 
@@ -739,7 +741,17 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             KeyCode.IME_UI_MODE_TEXT -> activeState.imeUiMode = ImeUiMode.TEXT
             KeyCode.IME_UI_MODE_MEDIA -> activeState.imeUiMode = ImeUiMode.MEDIA
             KeyCode.IME_UI_MODE_CLIPBOARD -> activeState.imeUiMode = ImeUiMode.CLIPBOARD
-            KeyCode.VOICE_INPUT -> FlorisImeService.switchToVoiceInputMethod()
+            KeyCode.VOICE_INPUT -> {
+                // Toggle: if recording, stop and transcribe; if not, start recording
+                val voiceInputManager by appContext.voiceInputManager()
+                if (voiceInputManager.isRecording) {
+                    voiceInputManager.stopAndTranscribe()
+                } else {
+                    val inputConnection = FlorisImeService.currentInputConnection()
+                    voiceInputManager.setInputConnection(inputConnection)
+                    voiceInputManager.startRecording()
+                }
+            }
             KeyCode.KANA_SWITCHER -> handleKanaSwitch()
             KeyCode.KANA_HIRA -> handleKanaHira()
             KeyCode.KANA_KATA -> handleKanaKata()
@@ -831,6 +843,7 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                 editorInstance.massSelection.end()
             }
             KeyCode.SHIFT -> handleShiftCancel()
+            // Voice input cancel is ignored - use tap toggle instead
         }
     }
 

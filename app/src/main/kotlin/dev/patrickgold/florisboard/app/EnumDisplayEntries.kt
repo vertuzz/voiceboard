@@ -42,6 +42,7 @@ import dev.patrickgold.florisboard.ime.text.gestures.SwipeAction
 import dev.patrickgold.florisboard.ime.text.key.KeyHintMode
 import dev.patrickgold.florisboard.ime.text.key.UtilityKeyAction
 import dev.patrickgold.florisboard.ime.theme.ThemeMode
+import dev.patrickgold.florisboard.ime.voice.PromptMode
 import dev.patrickgold.florisboard.ime.window.ImeWindowMode
 import dev.patrickgold.jetpref.datastore.ui.ListPreferenceEntry
 import dev.patrickgold.jetpref.datastore.ui.listPrefEntries
@@ -726,6 +727,26 @@ private val ENUM_DISPLAY_ENTRIES = mapOf<Pair<KClass<*>, String>, @Composable ()
             entry(
                 key = UtilityKeyAction.DYNAMIC_SWITCH_LANGUAGE_EMOJIS,
                 label = stringRes(R.string.enum__utility_key_action__dynamic_switch_language_emojis),
+            )
+        }
+    },
+    PromptMode::class to DEFAULT to {
+        listPrefEntries {
+            entry(
+                key = PromptMode.RAW,
+                label = stringRes(R.string.enum__prompt_mode__raw),
+            )
+            entry(
+                key = PromptMode.CLEAN,
+                label = stringRes(R.string.enum__prompt_mode__clean),
+            )
+            entry(
+                key = PromptMode.TRANSLATE,
+                label = stringRes(R.string.enum__prompt_mode__translate),
+            )
+            entry(
+                key = PromptMode.CUSTOM,
+                label = stringRes(R.string.enum__prompt_mode__custom),
             )
         }
     },
