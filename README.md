@@ -75,6 +75,16 @@ Beginning with v0.7 FlorisBoard will enter the public beta on Google Play.
 - Integrated extension support (still evolving)
 - Emoji keyboard / history / suggestions
 
+## VoiceBoard Capabilities
+This fork introduces powerful AI voice typing features designed for productivity and accessibility:
+
+- **AI-Powered Voice Typing**: Uses advanced models to understand context better than traditional voice typing.
+- **Smart Modes for Non-Native Speakers**:
+  - **Clean Mode (Default)**: Automatically fixes grammar mistakes, removes filler words ("um", "uh"), and polishes your sentences on the fly. Perfect for speaking confidently in a second language.
+  - **Translate Mode**: Speak in your native language (e.g., Ukrainian, Spanish, German) and get instant, fluent English text output.
+  - **Raw Mode**: Preserves every word and hesitation exactly as spoken.
+- **Improved Stability**: A completely rewritten voice input handling system for reliable, uninterrupted dictation.
+
 > [!IMPORTANT]
 > Word suggestions/spell checking are not included in the current releases
 > and are a major goal for the v0.6 milestone.
