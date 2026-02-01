@@ -70,7 +70,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.R
+import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.voiceInputManager
+import dev.patrickgold.jetpref.datastore.model.observeAsState
 import org.florisboard.lib.compose.stringRes
 
 /**
@@ -82,6 +84,11 @@ fun VoiceRecordingOverlay() {
     val context = LocalContext.current
     val voiceInputManager by context.voiceInputManager()
     val state by voiceInputManager.state.collectAsState()
+    
+    // Check if custom prompt is configured
+    val prefs by FlorisPreferenceStore
+    val customPrompt by prefs.voice.customPrompt.observeAsState()
+    val hasCustomPrompt = customPrompt.isNotBlank()
 
     val showOverlay = state !is VoiceRecordingState.Idle
 
@@ -107,6 +114,7 @@ fun VoiceRecordingOverlay() {
                 when (val currentState = state) {
                     is VoiceRecordingState.Recording -> RecordingContent(
                         state = currentState,
+                        hasCustomPrompt = hasCustomPrompt,
                         onStopWithMode = { mode -> voiceInputManager.stopAndTranscribe(mode) },
                         onCancel = { voiceInputManager.cancelRecording() }
                     )
@@ -126,6 +134,7 @@ fun VoiceRecordingOverlay() {
 @Composable
 private fun RecordingContent(
     state: VoiceRecordingState.Recording,
+    hasCustomPrompt: Boolean,
     onStopWithMode: (PromptMode) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -278,23 +287,25 @@ private fun RecordingContent(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        // Custom button (full width, less prominent) - only shown if custom prompt is configured
+        if (hasCustomPrompt) {
+            Spacer(modifier = Modifier.height(8.dp))
 
-        // Custom button (full width, less prominent)
-        OutlinedButton(
-            onClick = { onStopWithMode(PromptMode.CUSTOM) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "Custom Prompt",
-                fontSize = 14.sp,
-            )
+            OutlinedButton(
+                onClick = { onStopWithMode(PromptMode.CUSTOM) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Custom Prompt",
+                    fontSize = 14.sp,
+                )
+            }
         }
     }
 }
