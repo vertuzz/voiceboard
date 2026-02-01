@@ -87,8 +87,9 @@ class OpenRouterVoiceClient(private val apiKey: String) {
         try {
             val base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP)
             val systemPrompt = promptMode.getEffectivePrompt(customPrompt)
+            val userInstruction = promptMode.userInstruction
 
-            val requestBody = buildRequestBody(base64Audio, audioFormat, systemPrompt)
+            val requestBody = buildRequestBody(base64Audio, audioFormat, systemPrompt, userInstruction)
             val request = buildRequest(requestBody)
 
             val response = httpClient.newCall(request).await()
@@ -100,7 +101,12 @@ class OpenRouterVoiceClient(private val apiKey: String) {
         }
     }
 
-    private fun buildRequestBody(base64Audio: String, audioFormat: String, systemPrompt: String): String {
+    private fun buildRequestBody(
+        base64Audio: String, 
+        audioFormat: String, 
+        systemPrompt: String,
+        userInstruction: String
+    ): String {
         val requestJson = buildJsonObject {
             put("model", MODEL)
             put("messages", buildJsonArray {
@@ -115,7 +121,7 @@ class OpenRouterVoiceClient(private val apiKey: String) {
                     put("content", buildJsonArray {
                         add(buildJsonObject {
                             put("type", "text")
-                            put("text", "Transcribe this audio:")
+                            put("text", userInstruction)
                         })
                         add(buildJsonObject {
                             put("type", "input_audio")

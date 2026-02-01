@@ -64,15 +64,8 @@ class VoiceInputManager(private val context: Context) {
     val state: StateFlow<VoiceRecordingState> = _state.asStateFlow()
 
     private var countDownTimer: CountDownTimer? = null
-    private var currentPromptMode: PromptMode = PromptMode.CLEAN
     private var hasVibratedWarning = false
     private var inputConnection: InputConnection? = null
-
-    /**
-     * The currently selected prompt mode for transcription.
-     */
-    val promptMode: PromptMode
-        get() = currentPromptMode
 
     /**
      * Whether the manager is currently recording audio.
@@ -86,11 +79,6 @@ class VoiceInputManager(private val context: Context) {
     fun init() {
         // Clean up old temp files from previous sessions
         audioRecorder.cleanupOldFiles()
-        
-        // Load default prompt mode from preferences
-        scope.launch {
-            currentPromptMode = prefs.voice.defaultPromptMode.get()
-        }
     }
 
     /**
@@ -98,16 +86,6 @@ class VoiceInputManager(private val context: Context) {
      */
     fun setInputConnection(ic: InputConnection?) {
         inputConnection = ic
-    }
-
-    /**
-     * Sets the prompt mode for the next transcription.
-     */
-    fun setPromptMode(mode: PromptMode) {
-        currentPromptMode = mode
-        scope.launch {
-            prefs.voice.defaultPromptMode.set(mode)
-        }
     }
 
     /**
@@ -164,10 +142,7 @@ class VoiceInputManager(private val context: Context) {
 
         Log.d(TAG, "startRecording() - recorder started successfully")
         hasVibratedWarning = false
-        _state.value = VoiceRecordingState.Recording(
-            elapsedSeconds = 0,
-            promptMode = currentPromptMode
-        )
+        _state.value = VoiceRecordingState.Recording(elapsedSeconds = 0)
 
         // Start countdown timer
         startTimer()
@@ -179,10 +154,12 @@ class VoiceInputManager(private val context: Context) {
     }
 
     /**
-     * Stops recording and triggers transcription.
+     * Stops recording and triggers transcription with the specified mode.
+     * 
+     * @param mode The prompt mode to use for transcription
      */
-    fun stopAndTranscribe() {
-        Log.d(TAG, "stopAndTranscribe() called, current state: ${_state.value}")
+    fun stopAndTranscribe(mode: PromptMode) {
+        Log.d(TAG, "stopAndTranscribe() called with mode: $mode, current state: ${_state.value}")
         if (_state.value !is VoiceRecordingState.Recording) {
             Log.d(TAG, "stopAndTranscribe() - not recording, returning")
             return
@@ -198,11 +175,11 @@ class VoiceInputManager(private val context: Context) {
             return
         }
 
-        _state.value = VoiceRecordingState.Processing(currentPromptMode)
+        _state.value = VoiceRecordingState.Processing(mode)
         Log.d(TAG, "stopAndTranscribe() - launching transcription")
         
         scope.launch {
-            transcribeAndInsert(audioFile)
+            transcribeAndInsert(audioFile, mode)
         }
     }
 
@@ -240,10 +217,7 @@ class VoiceInputManager(private val context: Context) {
                 val elapsedMs = MAX_DURATION_MS - millisUntilFinished
                 val elapsedSeconds = (elapsedMs / 1000).toInt()
                 
-                _state.value = VoiceRecordingState.Recording(
-                    elapsedSeconds = elapsedSeconds,
-                    promptMode = currentPromptMode
-                )
+                _state.value = VoiceRecordingState.Recording(elapsedSeconds = elapsedSeconds)
 
                 // Vibrate at 9-minute mark (1 minute warning)
                 if (!hasVibratedWarning && elapsedMs >= WARNING_MS) {
@@ -253,9 +227,9 @@ class VoiceInputManager(private val context: Context) {
             }
 
             override fun onFinish() {
-                // Auto-stop at 10 minutes
+                // Auto-stop at 10 minutes with default CLEAN mode
                 vibrate(100)
-                stopAndTranscribe()
+                stopAndTranscribe(PromptMode.CLEAN)
             }
         }.start()
     }
@@ -265,8 +239,8 @@ class VoiceInputManager(private val context: Context) {
         countDownTimer = null
     }
 
-    private suspend fun transcribeAndInsert(audioFile: File) {
-        Log.d(TAG, "transcribeAndInsert() - starting with file: ${audioFile.absolutePath}, size: ${audioFile.length()}")
+    private suspend fun transcribeAndInsert(audioFile: File, promptMode: PromptMode) {
+        Log.d(TAG, "transcribeAndInsert() - starting with file: ${audioFile.absolutePath}, size: ${audioFile.length()}, mode: $promptMode")
         val client = voiceClient ?: run {
             Log.e(TAG, "transcribeAndInsert() - no voice client!")
             _state.value = VoiceRecordingState.Error.apiKeyMissing()
@@ -283,15 +257,15 @@ class VoiceInputManager(private val context: Context) {
             // Delete file immediately after reading
             audioRecorder.deleteFile(audioFile)
 
-            val customPrompt = if (currentPromptMode == PromptMode.CUSTOM) {
+            val customPrompt = if (promptMode == PromptMode.CUSTOM) {
                 prefs.voice.customPrompt.get().takeIf { it.isNotBlank() }
             } else null
 
-            Log.d(TAG, "transcribeAndInsert() - calling API with mode: $currentPromptMode, format: ${audioRecorder.audioFormat}")
+            Log.d(TAG, "transcribeAndInsert() - calling API with mode: $promptMode, format: ${audioRecorder.audioFormat}")
             val result = client.transcribe(
                 audioBytes = audioBytes,
                 audioFormat = audioRecorder.audioFormat,
-                promptMode = currentPromptMode,
+                promptMode = promptMode,
                 customPrompt = customPrompt
             )
 
@@ -311,7 +285,7 @@ class VoiceInputManager(private val context: Context) {
                         is OpenRouterException.Unauthorized -> VoiceRecordingState.Error.invalidApiKey()
                         is OpenRouterException.RateLimited -> {
                             // Auto-retry once after 3 seconds
-                            retryAfterDelay(audioBytes, customPrompt)
+                            retryAfterDelay(audioBytes, promptMode, customPrompt)
                             return
                         }
                         is OpenRouterException.PayloadTooLarge -> VoiceRecordingState.Error.audioTooLong()
@@ -334,7 +308,7 @@ class VoiceInputManager(private val context: Context) {
         }
     }
 
-    private suspend fun retryAfterDelay(audioBytes: ByteArray, customPrompt: String?) {
+    private suspend fun retryAfterDelay(audioBytes: ByteArray, promptMode: PromptMode, customPrompt: String?) {
         kotlinx.coroutines.delay(3000)
         
         val client = voiceClient ?: run {
@@ -345,7 +319,7 @@ class VoiceInputManager(private val context: Context) {
         val result = client.transcribe(
             audioBytes = audioBytes,
             audioFormat = audioRecorder.audioFormat,
-            promptMode = currentPromptMode,
+            promptMode = promptMode,
             customPrompt = customPrompt
         )
 

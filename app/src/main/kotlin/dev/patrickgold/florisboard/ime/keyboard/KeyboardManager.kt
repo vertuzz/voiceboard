@@ -742,15 +742,14 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             KeyCode.IME_UI_MODE_MEDIA -> activeState.imeUiMode = ImeUiMode.MEDIA
             KeyCode.IME_UI_MODE_CLIPBOARD -> activeState.imeUiMode = ImeUiMode.CLIPBOARD
             KeyCode.VOICE_INPUT -> {
-                // Toggle: if recording, stop and transcribe; if not, start recording
+                // Start recording - the overlay modal will handle stopping with mode selection
                 val voiceInputManager by appContext.voiceInputManager()
-                if (voiceInputManager.isRecording) {
-                    voiceInputManager.stopAndTranscribe()
-                } else {
+                if (!voiceInputManager.isRecording) {
                     val inputConnection = FlorisImeService.currentInputConnection()
                     voiceInputManager.setInputConnection(inputConnection)
                     voiceInputManager.startRecording()
                 }
+                // If already recording, ignore - the overlay modal handles stopping
             }
             KeyCode.KANA_SWITCHER -> handleKanaSwitch()
             KeyCode.KANA_HIRA -> handleKanaHira()

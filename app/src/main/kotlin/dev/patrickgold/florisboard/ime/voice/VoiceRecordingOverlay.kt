@@ -26,7 +26,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,12 +40,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,6 +63,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -68,7 +75,7 @@ import org.florisboard.lib.compose.stringRes
 
 /**
  * Overlay displayed during voice recording and processing.
- * Shows recording timer, mode indicator, and processing state.
+ * Shows recording timer and transcription mode buttons.
  */
 @Composable
 fun VoiceRecordingOverlay() {
@@ -92,15 +99,16 @@ fun VoiceRecordingOverlay() {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .padding(horizontal = 24.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 8.dp,
             ) {
                 when (val currentState = state) {
                     is VoiceRecordingState.Recording -> RecordingContent(
                         state = currentState,
-                        onStopClick = { voiceInputManager.stopAndTranscribe() }
+                        onStopWithMode = { mode -> voiceInputManager.stopAndTranscribe(mode) },
+                        onCancel = { voiceInputManager.cancelRecording() }
                     )
                     is VoiceRecordingState.Processing -> ProcessingContent(currentState)
                     is VoiceRecordingState.Error -> ErrorContent(
@@ -118,14 +126,15 @@ fun VoiceRecordingOverlay() {
 @Composable
 private fun RecordingContent(
     state: VoiceRecordingState.Recording,
-    onStopClick: () -> Unit
+    onStopWithMode: (PromptMode) -> Unit,
+    onCancel: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.2f,
+        targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
-            animation = tween(500, easing = LinearEasing),
+            animation = tween(600, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse_scale"
@@ -134,91 +143,183 @@ private fun RecordingContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp),
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Pulsing mic icon
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .scale(scale)
-                .background(
-                    color = Color.Red.copy(alpha = 0.2f),
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center,
+        // Header with cancel button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .background(
-                        color = Color.Red,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
+            Text(
+                text = stringRes(R.string.voice__recording__title),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            IconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
                 Icon(
-                    imageVector = Icons.Default.Mic,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(36.dp),
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Cancel",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Timer display
-        Text(
-            text = formatTime(state.elapsedSeconds),
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (state.isNearLimit) Color.Red else MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Mode chip
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
+        // Pulsing mic icon with timer
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
         ) {
-            Text(
-                text = state.promptMode.displayName,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = 14.sp,
-            )
-        }
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .scale(scale)
+                    .background(
+                        color = Color.Red.copy(alpha = 0.15f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            color = Color.Red,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-        // Stop button
-        Button(
-            onClick = onStopClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Stop,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+            // Timer display
             Text(
-                text = stringRes(R.string.voice__recording__stop_button),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
+                text = formatTime(state.elapsedSeconds),
+                fontSize = 40.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (state.isNearLimit) Color.Red else MaterialTheme.colorScheme.onSurface,
             )
         }
 
         if (state.isNearLimit) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringRes(R.string.voice__recording__time_remaining, "time" to formatTime(state.remainingSeconds)),
                 color = Color.Red,
                 fontSize = 12.sp,
             )
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Mode selection buttons
+        Text(
+            text = "Tap to stop and transcribe:",
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+
+        // Primary button - Clean (most common)
+        Button(
+            onClick = { onStopWithMode(PromptMode.CLEAN) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Stop,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Clean Transcript",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Secondary buttons row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // Raw button
+            ModeButton(
+                text = "Raw",
+                icon = Icons.Default.RecordVoiceOver,
+                modifier = Modifier.weight(1f),
+                onClick = { onStopWithMode(PromptMode.RAW) }
+            )
+            
+            // Translate button
+            ModeButton(
+                text = "To English",
+                icon = Icons.Default.Translate,
+                modifier = Modifier.weight(1f),
+                onClick = { onStopWithMode(PromptMode.TRANSLATE) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Custom button (full width, less prominent)
+        OutlinedButton(
+            onClick = { onStopWithMode(PromptMode.CUSTOM) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "Custom Prompt",
+                fontSize = 14.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ModeButton(
+    text: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = text,
+            fontSize = 13.sp,
+        )
     }
 }
 
@@ -227,15 +328,15 @@ private fun ProcessingContent(state: VoiceRecordingState.Processing) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp),
+            .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CircularProgressIndicator(
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(56.dp),
             strokeWidth = 4.dp,
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Text(
             text = stringRes(R.string.voice__processing__title),

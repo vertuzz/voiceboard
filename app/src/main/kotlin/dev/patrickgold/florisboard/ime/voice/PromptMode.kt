@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
  * Represents the different transcription modes available for voice input.
  */
 @Serializable
-enum class PromptMode(val systemPrompt: String, val displayName: String) {
+enum class PromptMode(val systemPrompt: String, val displayName: String, val userInstruction: String) {
     @SerialName("raw")
     RAW(
         systemPrompt = """You are a speech-to-text transcriber. Your ONLY job is to output the exact words spoken.
@@ -33,13 +33,11 @@ CRITICAL RULES:
 - NO quotes around the text
 - NO comments like "Here is your transcript" or "The user said:"
 - NO explanations or meta-commentary
-- Preserve the EXACT language the user speaks in (Ukrainian stays Ukrainian, German stays German, etc.)
+- Respond in the SAME language that the user speaks - auto-detect it from the audio
 - Preserve filler words and hesitations exactly as spoken
-- If the audio is silent or inaudible, output nothing (empty response)
-
-Bad example: "Привіт, як справи?"
-Good example: Привіт, як справи?""",
-        displayName = "Raw"
+- If the audio is silent or inaudible, output nothing (empty response)""",
+        displayName = "Raw",
+        userInstruction = "Transcribe the audio exactly as spoken."
     ),
 
     @SerialName("clean")
@@ -51,15 +49,13 @@ CRITICAL RULES:
 - NO quotes around the text
 - NO comments like "Here is your transcript" or "The user said:"
 - NO explanations or meta-commentary
-- Preserve the EXACT language the user speaks in (Ukrainian stays Ukrainian, German stays German, etc.)
-- Remove filler words (um, uh, еее, ммм)
+- Respond in the SAME language that the user speaks - auto-detect it from the audio
+- Remove filler words (um, uh, like, you know, etc.)
 - Fix grammar and punctuation
 - Preserve the core meaning
-- If the audio is silent or inaudible, output nothing (empty response)
-
-Bad example: "Привіт, як справи?"
-Good example: Привіт, як справи?""",
-        displayName = "Clean"
+- If the audio is silent or inaudible, output nothing (empty response)""",
+        displayName = "Clean",
+        userInstruction = "Transcribe the audio."
     ),
 
     @SerialName("translate")
@@ -72,17 +68,16 @@ CRITICAL RULES:
 - NO comments like "Here is your translation" or "The user said:"
 - NO explanations or meta-commentary
 - Translate ANY source language to natural, fluent English
-- If the audio is silent or inaudible, output nothing (empty response)
-
-Bad example: "Hello, how are you?"
-Good example: Hello, how are you?""",
-        displayName = "Translate"
+- If the audio is silent or inaudible, output nothing (empty response)""",
+        displayName = "To English",
+        userInstruction = "Translate the audio to English."
     ),
 
     @SerialName("custom")
     CUSTOM(
         systemPrompt = "",
-        displayName = "Custom"
+        displayName = "Custom",
+        userInstruction = "Process the audio according to the system instructions."
     );
 
     fun getEffectivePrompt(customPrompt: String?): String {

@@ -28,11 +28,9 @@ sealed class VoiceRecordingState {
     /**
      * Currently recording audio.
      * @param elapsedSeconds Number of seconds elapsed since recording started (0-600)
-     * @param promptMode The transcription mode that will be used
      */
     data class Recording(
-        val elapsedSeconds: Int = 0,
-        val promptMode: PromptMode = PromptMode.CLEAN
+        val elapsedSeconds: Int = 0
     ) : VoiceRecordingState() {
         val remainingSeconds: Int get() = MAX_RECORDING_DURATION_SECONDS - elapsedSeconds
         val isNearLimit: Boolean get() = remainingSeconds <= WARNING_THRESHOLD_SECONDS
