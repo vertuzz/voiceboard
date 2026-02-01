@@ -16,16 +16,14 @@
 
 package dev.patrickgold.florisboard.ime.voice
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -92,39 +91,56 @@ fun VoiceRecordingOverlay() {
 
     val showOverlay = state !is VoiceRecordingState.Idle
 
-    AnimatedVisibility(
-        visible = showOverlay,
-        enter = fadeIn(animationSpec = tween(150)),
-        exit = fadeOut(animationSpec = tween(150)),
-    ) {
-        Box(
+    // Use similar structure to BottomSheetHostUi for proper touch handling
+    val bgColor = if (showOverlay) Color.Black.copy(alpha = 0.7f) else Color.Transparent
+    
+    if (showOverlay) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.7f)),
-            contentAlignment = Alignment.Center,
+                .background(bgColor)
         ) {
-            Surface(
+            // Top scrim area - catches touches and allows dismissing
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 8.dp,
+                    .weight(1f)
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                            // Tapping outside the modal - could dismiss, but we'll just consume
+                        }
+                    },
+            )
+            
+            // Content area - centered modal
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 24.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                when (val currentState = state) {
-                    is VoiceRecordingState.Recording -> RecordingContent(
-                        state = currentState,
-                        hasCustomPrompt = hasCustomPrompt,
-                        onStopWithMode = { mode -> voiceInputManager.stopAndTranscribe(mode) },
-                        onCancel = { voiceInputManager.cancelRecording() }
-                    )
-                    is VoiceRecordingState.Processing -> ProcessingContent(currentState)
-                    is VoiceRecordingState.Error -> ErrorContent(
-                        state = currentState,
-                        onDismiss = { voiceInputManager.dismissError() }
-                    )
-                    is VoiceRecordingState.Success -> { /* Brief flash, handled by manager */ }
-                    is VoiceRecordingState.Idle -> { /* Not shown */ }
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 8.dp,
+                ) {
+                    when (val currentState = state) {
+                        is VoiceRecordingState.Recording -> RecordingContent(
+                            state = currentState,
+                            hasCustomPrompt = hasCustomPrompt,
+                            onStopWithMode = { mode -> voiceInputManager.stopAndTranscribe(mode) },
+                            onCancel = { voiceInputManager.cancelRecording() }
+                        )
+                        is VoiceRecordingState.Processing -> ProcessingContent(currentState)
+                        is VoiceRecordingState.Error -> ErrorContent(
+                            state = currentState,
+                            onDismiss = { voiceInputManager.dismissError() }
+                        )
+                        is VoiceRecordingState.Success -> { /* Brief flash, handled by manager */ }
+                        is VoiceRecordingState.Idle -> { /* Not shown */ }
+                    }
                 }
             }
         }
