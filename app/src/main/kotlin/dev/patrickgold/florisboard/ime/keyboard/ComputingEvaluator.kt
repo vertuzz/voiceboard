@@ -229,6 +229,9 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
         KeyCode.VOICE_INPUT -> {
             Icons.Default.KeyboardVoice
         }
+        KeyCode.FIX_TEXT -> {
+            context()?.vectorResource(id = R.drawable.ic_fix_text)
+        }
         KeyCode.IME_HIDE_UI -> {
             Icons.Default.KeyboardHide
         }
