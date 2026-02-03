@@ -126,19 +126,25 @@ class TextCorrectionManager(private val context: Context) {
 
     /**
      * Retrieves all text from the input field.
+     * Uses getExtractedText for reliable retrieval of all text content.
      */
     private fun getAllTextFromField(ic: InputConnection): String {
         try {
-            // Get text before cursor
+            // Use getExtractedText to get all text from the field
+            val request = android.view.inputmethod.ExtractedTextRequest()
+            request.token = 0
+            request.flags = 0
+            
+            val extractedText = ic.getExtractedText(request, 0)
+            if (extractedText != null && extractedText.text != null) {
+                return extractedText.text.toString()
+            }
+            
+            // Fallback: Get text before and after cursor if getExtractedText fails
             val textBefore = ic.getTextBeforeCursor(MAX_TEXT_LENGTH, 0)?.toString() ?: ""
-            
-            // Get selected text
             val selectedText = ic.getSelectedText(0)?.toString() ?: ""
-            
-            // Get text after cursor
             val textAfter = ic.getTextAfterCursor(MAX_TEXT_LENGTH, 0)?.toString() ?: ""
             
-            // Combine all text
             return if (selectedText.isNotEmpty()) {
                 textBefore + selectedText + textAfter
             } else {
@@ -200,13 +206,26 @@ class TextCorrectionManager(private val context: Context) {
 
     /**
      * Replaces all text in the input field with the corrected text.
+     * Uses setSelection for reliable text selection across all apps.
      */
     private fun replaceAllText(ic: InputConnection, newText: String) {
         try {
             ic.beginBatchEdit()
             
-            // Select all text using performContextMenuAction
-            ic.performContextMenuAction(android.R.id.selectAll)
+            // Get the current text length to determine selection range
+            val request = android.view.inputmethod.ExtractedTextRequest()
+            request.token = 0
+            request.flags = 0
+            val extractedText = ic.getExtractedText(request, 0)
+            
+            if (extractedText != null && extractedText.text != null) {
+                val textLength = extractedText.text.length
+                // Select all text by setting selection from 0 to text length
+                ic.setSelection(0, textLength)
+            } else {
+                // Fallback: try performContextMenuAction if getExtractedText fails
+                ic.performContextMenuAction(android.R.id.selectAll)
+            }
             
             // Replace selected text with corrected text
             ic.commitText(newText, 1)
