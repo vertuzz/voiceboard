@@ -62,6 +62,7 @@ import dev.patrickgold.florisboard.lib.uppercase
 import dev.patrickgold.florisboard.lib.util.InputMethodUtils
 import dev.patrickgold.florisboard.nlpManager
 import dev.patrickgold.florisboard.subtypeManager
+import dev.patrickgold.florisboard.textCorrectionManager
 import dev.patrickgold.florisboard.voiceInputManager
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicInteger
@@ -750,6 +751,14 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                     voiceInputManager.startRecording()
                 }
                 // If already recording, ignore - the overlay modal handles stopping
+            }
+            KeyCode.FIX_TEXT -> {
+                scope.launch {
+                    val textCorrectionManager by appContext.textCorrectionManager()
+                    val inputConnection = FlorisImeService.currentInputConnection()
+                    textCorrectionManager.setInputConnection(inputConnection)
+                    textCorrectionManager.fixCurrentText()
+                }
             }
             KeyCode.KANA_SWITCHER -> handleKanaSwitch()
             KeyCode.KANA_HIRA -> handleKanaHira()
