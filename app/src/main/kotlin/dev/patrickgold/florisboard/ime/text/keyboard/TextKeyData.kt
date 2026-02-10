@@ -501,6 +501,13 @@ data class TextKeyData(
             label = "voice_input",
         )
 
+        /** Predefined key data for [KeyCode.FIX_TEXT] */
+        val FIX_TEXT = TextKeyData(
+            type = KeyType.UNSPECIFIED,
+            code = KeyCode.FIX_TEXT,
+            label = "fix_text",
+        )
+
         /** Predefined key data for [KeyCode.TOGGLE_SMARTBAR_VISIBILITY] */
         val TOGGLE_SMARTBAR_VISIBILITY = TextKeyData(
             type = KeyType.SYSTEM_GUI,
